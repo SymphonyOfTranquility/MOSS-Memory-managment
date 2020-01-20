@@ -1,2 +1,2 @@
 # MOSS-Memory-managment
-System programming and operating system. Lab 1.
+System programming and operating systems. Lab 1.
