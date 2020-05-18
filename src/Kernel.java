@@ -46,7 +46,7 @@ public class Kernel extends Thread
     long high = 0;
     long low = 0;
     long addr = 0;
-    long address_limit = (block * virtPageNum+1)-1;
+    long address_limit = (block * (virtPageNum+1))-1;
   
     if ( config != null )
     {
@@ -68,7 +68,7 @@ public class Kernel extends Thread
                 System.out.println("MemoryManagement: numpages out of bounds.");
                 System.exit(-1);
               }
-              address_limit = (block * virtPageNum+1)-1;
+              address_limit = (block * (virtPageNum+1))-1;
             }
           }
         }
@@ -185,7 +185,7 @@ public class Kernel extends Thread
               {
                 block = Long.parseLong(tmp,10);             
               }
-              address_limit = (block * virtPageNum+1)-1;
+              address_limit = (block * (virtPageNum+1))-1;
             }
             if ( block < 64 || block > Math.pow(2,26))
             {
@@ -282,14 +282,16 @@ public class Kernel extends Thread
       trace.delete();
     }
     runs = 0;
-    for (i = 0; i < virtPageNum; i++) 
+    Vector<Integer> existingPhysicalPages = new Vector<Integer>();
+    for (i = 0; i <= virtPageNum; i++)
     {
       Page page = (Page) memVector.elementAt(i);
       if ( page.physical != -1 )
       {
         map_count++;
+        existingPhysicalPages.add(page.physical);
       }
-      for (j = 0; j < virtPageNum; j++) 
+      for (j = 0; j <= virtPageNum; j++)
       {
         Page tmp_page = (Page) memVector.elementAt(j);
         if (tmp_page.physical == page.physical && page.physical >= 0)
@@ -306,17 +308,21 @@ public class Kernel extends Thread
     }
     if ( map_count < ( virtPageNum +1 ) / 2 )
     {
-      for (i = 0; i < virtPageNum; i++) 
+      map_count = 0;
+      for (i = 0; i <= virtPageNum; i++)
       {
         Page page = (Page) memVector.elementAt(i);
         if ( page.physical == -1 && map_count < ( virtPageNum + 1 ) / 2 )
         {
-          page.physical = i;
+          while (existingPhysicalPages.contains(map_count)) {
+            map_count++;
+          }
+          page.physical = map_count;
           map_count++;
         }
       }
     }
-    for (i = 0; i < virtPageNum; i++) 
+    for (i = 0; i <= virtPageNum; i++)
     {
       Page page = (Page) memVector.elementAt(i);
       if (page.physical == -1) 
@@ -325,12 +331,12 @@ public class Kernel extends Thread
       } 
       else
       {
-        controlPanel.addPhysicalPage( i , page.physical );
+        controlPanel.addPhysicalPage( page.physical, i );
       }
     }
     for (i = 0; i < instructVector.size(); i++) 
     {
-      high = block * virtPageNum;
+      high = block * (virtPageNum + 1);
       Instruction instruct = ( Instruction ) instructVector.elementAt( i );
       if ( instruct.addr < 0 || instruct.addr > high )
       {
@@ -338,6 +344,8 @@ public class Kernel extends Thread
         System.exit(-1);
       }
     }
+
+    PageFault.pagesList = new MyList(memVector, virtPageNum+1);
   } 
 
   public void setControlPanel(ControlPanel newControlPanel) 
@@ -442,6 +450,7 @@ public class Kernel extends Thread
         {
           System.out.println( "READ " + Long.toString( instruct.addr , addressradix ) + " ... okay" );
         }
+        PageFault.pagesList.moveToEnd(page.id);
       }
     }
     if ( instruct.inst.startsWith( "WRITE" ) ) 
@@ -462,6 +471,7 @@ public class Kernel extends Thread
       else 
       {
         page.M = 1;
+        page.R = 1;
         page.lastTouchTime = 0;
         if ( doFileLog )
         {
@@ -471,20 +481,25 @@ public class Kernel extends Thread
         {
           System.out.println( "WRITE " + Long.toString(instruct.addr , addressradix) + " ... okay" );
         }
+        PageFault.pagesList.moveToEnd(page.id);
       }
     }
-    for ( i = 0; i < virtPageNum; i++ ) 
+    for ( i = 0; i <= virtPageNum; i++ )
     {
       Page page = ( Page ) memVector.elementAt( i );
-      if ( page.R == 1 && page.lastTouchTime == 10 ) 
+      if (page.lastTouchTime != 0)
       {
         page.R = 0;
+        page.M = 0;
       }
       if ( page.physical != -1 ) 
       {
         page.inMemTime = page.inMemTime + 10;
         page.lastTouchTime = page.lastTouchTime + 10;
       }
+      //if (page.physical != -1)
+      //  System.out.println(page.id + " " + page.physical + " " + page.R + " " + page.M +
+      //        " " + page.inMemTime + " " + page.lastTouchTime);
     }
     runs++;
     controlPanel.timeValueLabel.setText( Integer.toString( runs*10 ) + " (ns)" );

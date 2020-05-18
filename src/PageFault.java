@@ -49,8 +49,28 @@ public class PageFault {
    * @param controlPanel represents the graphical element of the 
    *   simulator, and allows one to modify the current display.
    */
+  private PageFault() {}
+
+  public static MyList pagesList;
+
   public static void replacePage ( Vector mem , int virtPageNum , int replacePageNum , ControlPanel controlPanel ) 
   {
+    Page leastRecentlyUsed = pagesList.top();
+    pagesList.popFront();
+
+    Page nextPage = ( Page ) mem.elementAt(replacePageNum);
+    leastRecentlyUsed.M = 0;
+    controlPanel.removePhysicalPage( leastRecentlyUsed.id );
+    nextPage.physical = leastRecentlyUsed.physical;
+    controlPanel.addPhysicalPage( nextPage.physical , replacePageNum );
+    leastRecentlyUsed.inMemTime = 0;
+    leastRecentlyUsed.lastTouchTime = 0;
+    leastRecentlyUsed.R = 0;
+    leastRecentlyUsed.M = 0;
+    leastRecentlyUsed.physical = -1;
+    pagesList.pushBack(nextPage);
+
+    /*
     int count = 0;
     int oldestPage = -1;
     int oldestTime = 0;
@@ -87,6 +107,6 @@ public class PageFault {
     page.lastTouchTime = 0;
     page.R = 0;
     page.M = 0;
-    page.physical = -1;
+    page.physical = -1;*/
   }
 }
