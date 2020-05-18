@@ -497,9 +497,6 @@ public class Kernel extends Thread
         page.inMemTime = page.inMemTime + 10;
         page.lastTouchTime = page.lastTouchTime + 10;
       }
-      //if (page.physical != -1)
-      //  System.out.println(page.id + " " + page.physical + " " + page.R + " " + page.M +
-      //        " " + page.inMemTime + " " + page.lastTouchTime);
     }
     runs++;
     controlPanel.timeValueLabel.setText( Integer.toString( runs*10 ) + " (ns)" );

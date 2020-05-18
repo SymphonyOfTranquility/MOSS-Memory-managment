@@ -1,0 +1,5 @@
+READ 0 ... okay
+WRITE bbbb ... okay
+WRITE cfff ... page fault
+READ bfff ... okay
+WRITE 0 ... page fault
